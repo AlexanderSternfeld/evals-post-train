@@ -1,0 +1,3 @@
+mmlu/exact_match,ordered-extract
+ifeval/prompt_level_loose_acc
+hellaswag/acc

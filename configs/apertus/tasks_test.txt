@@ -1,0 +1,6 @@
+agieval
+arc_multilingual
+arc_challenge_chat_cot
+gpqa_main_cot_zeroshot
+mlogiqa_gen
+gsm8k_platinum_cot_zeroshot
