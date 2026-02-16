@@ -6,7 +6,7 @@
 #SBATCH --job-name=evaluation
 #SBATCH --mem=460000
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks-per-node=1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --exclusive
@@ -260,7 +260,7 @@ pip install --no-cache-dir --upgrade --no-deps \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
     \"accelerate>=1.1.0\" \
-    \"antlr4-python3-runtime==4.13.2\" \
+    \"antlr4-python3-runtime==4.11\" \
     datasketch \
     mistral-common \
     sympy \

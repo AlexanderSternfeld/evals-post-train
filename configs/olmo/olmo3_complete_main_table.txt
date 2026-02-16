@@ -22,7 +22,7 @@ squadv2/f1
 coqa/f1
 lambada_openai/acc
 bbh/exact_match
-harmbench/asr
+harmbench/score
 toxigen/acc_norm
 wmdp/acc
 bbq/acc
