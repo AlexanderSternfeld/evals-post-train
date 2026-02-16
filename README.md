@@ -63,8 +63,9 @@ evals/
 
 | Mode | Tasks | Description |
 |------|-------|-------------|
-| `default` | 14 tasks | Apertus benchmark suite with basic evaluation |
+| `default` | 40 tasks | Full Apertus benchmark suite with basic evaluation |
 | `multi-lingual` | 10 tasks | Apertus benchmark suite with multi-lingual evaluation |
+| `apertus-previous` | 14 tasks | Apertus benchmark suite with multi-lingual evaluation |
 | `olmo-easy` | 21 tasks | Base Easy Suite: perplexity/BPB-style evaluation (mmlu, hellaswag, arc, etc.) |
 | `olmo-main` | 18 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
 | `olmo-heldout` | 2 tasks | Held-out Suite: mmlu_pro, bbh |

@@ -1,3 +1,0 @@
-mmlu
-ifeval
-hellaswag
