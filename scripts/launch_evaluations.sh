@@ -6,12 +6,17 @@
 #   bash launch_evaluations.sh <mode> [options]
 #
 # Modes:
-#   easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
-#   main        - Base Main Suite (gsm8k_cot, humaneval, arc, ...)
-#   heldout     - Held-out Suite (mmlu_pro, bbh)
-#   safety      - Safety (harmbench, toxigen, wmdp, bbq)
-#   longcontext - Long-Context (RULER)
-#   complete    - All suites combined (default, excludes long-context)
+
+# Apertus:
+#   default          -  Apertus multilingual suite
+#
+# Olmo3:
+#   olmo-easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
+#   olmo-main        - Base Main Suite (gsm8k_cot, humaneval, arc, ...)
+#   olmo-heldout     - Held-out Suite (mmlu_pro, bbh)
+#   olmo-safety      - Safety (harmbench, toxigen, wmdp, bbq)
+#   olmo-longcontext - Long-Context (RULER)
+#   olmo-complete    - All suites combined (default, excludes long-context)
 #
 # Model selection (pick one):
 #   --model <path>            - Single HF model or local checkpoint path

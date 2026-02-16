@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --account=a-infra01-1
-#SBATCH --cpus-per-task=288
+#SBATCH --ntasks-per-node=4
+#SBATCH --cpus-per-task=72
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=evaluation
 #SBATCH --mem=460000
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=4
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --exclusive
@@ -272,13 +273,14 @@ pip install --no-cache-dir --upgrade --no-deps \
     hf-transfer \
     \"peft>=0.2.0\" "
 
+VLLM_WHEEL="https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl"
+
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
-    INSTALL_CMD="$INSTALL_CMD && \
-pip install --no-cache-dir --upgrade --no-deps \
-    \"https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl\" ray &&
-    export LD_LIBRARY_PATH="/usr/local/lib/python3.12/dist-packages/torch/lib:${LD_LIBRARY_PATH:-}" "
-elif [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM "
+  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps \"$VLLM_WHEEL\" ray cloudpickle msgspec"
+fi
+
+if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
+  INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"
 fi
 
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
@@ -297,16 +299,23 @@ echo "Starting timing for installation and evaluation..."
 START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    srun --mpi=pmix --ntasks-per-node=$MP -ul --environment=./containers/env_nemo.toml bash -c " \
-        unset SSL_CERT_FILE && \
-        $INSTALL_CMD && \
-        $CMD
-    "
+  # install once
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+
+  # run 4 ranks
+  srun -n $MP --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c "unset SSL_CERT_FILE; $CMD"
 else
-    srun --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c " \
-        unset SSL_CERT_FILE && \
-        $INSTALL_CMD && \
-        $CMD
+  # hf/vllm unchanged (single task)
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
+
+    $INSTALL_CMD
+
+    # Make torch CUDA libs discoverable for vllm._C import - is just ignored for Huggingface
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+
+    $CMD
     "
 fi
 
