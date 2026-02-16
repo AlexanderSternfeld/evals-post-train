@@ -63,12 +63,14 @@ evals/
 
 | Mode | Tasks | Description |
 |------|-------|-------------|
-| `easy` | 21 tasks | Base Easy Suite: perplexity/BPB-style evaluation (mmlu, hellaswag, arc, etc.) |
-| `main` | 18 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
-| `heldout` | 2 tasks | Held-out Suite: mmlu_pro, bbh |
-| `safety` | 4 tasks | Safety Suite: harmbench, toxigen, wmdp, bbq |
-| `longcontext` | 1 task | Long-Context: RULER (8192 tokens) |
-| `complete` | 30 tasks | Union of all above (excludes long-context), deduplicated |
+| `default` | 14 tasks | Apertus benchmark suite with basic evaluation |
+| `multi-lingual` | 10 tasks | Apertus benchmark suite with multi-lingual evaluation |
+| `olmo-easy` | 21 tasks | Base Easy Suite: perplexity/BPB-style evaluation (mmlu, hellaswag, arc, etc.) |
+| `olmo-main` | 18 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
+| `olmo-heldout` | 2 tasks | Held-out Suite: mmlu_pro, bbh |
+| `olmo-safety` | 4 tasks | Safety Suite: harmbench, toxigen, wmdp, bbq |
+| `olmo-longcontext` | 1 task | Long-Context: RULER (8192 tokens) |
+| `olmo-complete` | 30 tasks | Union of all above (excludes long-context), deduplicated |
 
 Each mode has a corresponding task list (`configs/olmo3_<mode>.txt`) and metric config (`configs/olmo3_<mode>_main_table.txt`). Results are logged to separate W&B projects per mode (e.g., `swissai-evals-olmo3-easy`), except `complete` which uses the base project name.
 

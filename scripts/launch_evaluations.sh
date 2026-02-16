@@ -127,8 +127,12 @@ export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
 # --- Configure task suite ---
 case "$EVAL_MODE" in
     "default")
-        export TASKS=./configs/apertus/task_multilingual.txt
-        export TABLE_METRICS=./configs/apertus/task_multilingual_main_table.txt
+        export TASKS=./configs/apertus/tasks_english.txt
+        export TABLE_METRICS=./configs/apertus/tasks_english_main_table.txt
+        ;;
+    "multi-lingual")
+        export TASKS=./configs/apertus/tasks_multilingual.txt
+        export TABLE_METRICS=./configs/apertus/tasks_multilingual_main_table.txt
         ;;
     "olmo-easy")
         export TASKS=./configs/olmo/olmo3_easy.txt
