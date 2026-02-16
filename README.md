@@ -5,53 +5,21 @@ Evaluation infrastructure for benchmarking Large Language Models on SLURM cluste
 ## Quick Start
 
 ```bash
-# Evaluate a single model on the benchmark suite
-bash scripts/launch_evaluations.sh complete --model meta-llama/Llama-3.1-8B-Instruct
+# Evaluate a single model on the benchmark suite (with custom name)
+bash scripts/launch_evaluations.sh default --model meta-llama/Llama-3.1-8B-Instruct --name Llama-Baseline
 
-# Same, but split tasks across 4 parallel nodes for faster evaluation
-bash scripts/launch_evaluations.sh complete --model meta-llama/Llama-3.1-8B-Instruct --splits 4
+# Same, but split tasks across 4 parallel nodes for faster evaluation, name automatically infered
+bash scripts/launch_evaluations.sh default --model meta-llama/Llama-3.1-8B-Instruct --splits 4
 
-# Evaluate a base model with 5-shot (matching OLMo3 paper settings)
-bash scripts/launch_evaluations.sh easy --model Qwen/Qwen2.5-7B --num-fewshot 5
+# Launch Megatron checkpoint without conversion (TODO: Verify), Megatron-iter defaults to: latest
+bash scripts/launch_evaluations.sh olmo-easy --model /capstor/store/../apertus-.../checkpoints/ --backend megatron_lm --name Megatron-Test-260216 --megatron-iter 4000000
+
+# Launch with vllm backend
+bash scripts/launch_evaluations.sh olmo-easy --model /capstor/store/../apertus-.../checkpoints/ --backend vllm
+
+# Evaluate a base model with 5-shot and easy eval set (matching OLMo3 technical report settings)
+bash scripts/launch_evaluations.sh olmo-easy --model Qwen/Qwen2.5-7B --num-fewshot 5
 ```
-
-## Repository Structure
-
-```
-evals/
-├── configs/                         # Task lists and model registry
-│   ├── _*.txt                       # actual task lists
-│   ├── _*_main_table.txt            # Corresponding metric specs for W&B summary tables
-│   ├── models.md                    # Model registry with paths and special flags
-│   ├── olmo/                        # OLMo3 benchmark suites (easy, main, heldout, safety, longcontext, complete)
-│   ├── apertus/                     # Apertus task lists (english, multilingual, etc.)
-│   ├── tasks.json                   # Legacy task grouping config (swissai_eval hierarchy)
-│   └── automation.json              # Automated evaluation scheduling config
-├── scripts/
-│   ├── launch_evaluations.sh  # Main launcher (recommended entry point)
-│   ├── evaluate.sbatch        # SLURM job script for HF/vLLM model evaluation
-│   ├── aggregate_splits.sbatch   # Aggregation job for split evaluations
-│   ├── update_wandb.py              # Legacy W&B uploader (iteration-based)
-│   ├── automate.py                  # Continuous automation daemon
-│   └── alignment/                   # Python package for W&B upload and data handling
-│       ├── wandb_alignment_utils.py # Core upload logic with stratified sample selection
-│       ├── update_wandb_alignment.py       # Per-model W&B upload script
-│       ├── update_wandb_all_models.py      # Batch upload for all models
-│       ├── merge_split_results.py          # Merges results from split evaluation jobs
-│       └── data_structures.py              # Sample, Metric, Task, ModelEvaluation classes
-├── runners/              # Multi-model evaluation scripts
-│   ├── hf_base_runner.sh            # Generic runner (handles split-aware job submission)
-│   ├── hf_eval_multiple_other_models.sh
-│   ├── hf_eval_multiple_other_base_models.sh
-│   ├── hf_eval_multiple_apertus_models.sh
-│   └── hf_eval_multiple_apertus_base_models.sh
-├── containers/                      # Container specs (Docker, env.toml for enroot/pyxis)
-│   ├── Dockerfile                   # CUDA 9.0+PTX, vLLM, FlashAttention-3
-│   ├── env.toml                     # Standard container config
-└── lm_eval_reference/               # Bundled lm-evaluation-harness reference (224 tasks)
-```
-
----
 
 ## The Launch Script
 
@@ -123,6 +91,46 @@ bash scripts/launch_evaluations.sh complete \
 # Run all models from a batch script on the safety suite
 bash scripts/launch_evaluations.sh safety \
   --script runners/hf_eval_multiple_other_models.sh --splits 4
+```
+
+---
+
+## Repository Structure
+
+```
+evals/
+├── configs/                         # Task lists and model registry
+│   ├── _*.txt                       # actual task lists
+│   ├── _*_main_table.txt            # Corresponding metric specs for W&B summary tables
+│   ├── models.md                    # Model registry with paths and special flags
+│   ├── olmo/                        # OLMo3 benchmark suites (easy, main, heldout, safety, longcontext, complete)
+│   ├── apertus/                     # Apertus task lists (english, multilingual, etc.)
+│   ├── tasks.json                   # Legacy task grouping config (swissai_eval hierarchy)
+│   └── automation.json              # Automated evaluation scheduling config
+├── scripts/
+│   ├── launch_evaluations.sh  # Main launcher (recommended entry point)
+│   ├── evaluate.sbatch        # SLURM job script for HF/vLLM model evaluation
+│   ├── aggregate_splits.sbatch   # Aggregation job for split evaluations
+│   ├── update_wandb.py              # Legacy W&B uploader (iteration-based)
+│   ├── automate.py                  # Continuous automation daemon
+│   └── alignment/                   # Python package for W&B upload and data handling
+│       ├── wandb_alignment_utils.py # Core upload logic with stratified sample selection
+│       ├── update_wandb_alignment.py       # Per-model W&B upload script
+│       ├── update_wandb_all_models.py      # Batch upload for all models
+│       ├── merge_split_results.py          # Merges results from split evaluation jobs
+│       └── data_structures.py              # Sample, Metric, Task, ModelEvaluation classes
+├── runners/              # Multi-model evaluation scripts
+│   ├── hf_base_runner.sh            # Generic runner (handles split-aware job submission)
+│   ├── hf_eval_multiple_other_models.sh
+│   ├── hf_eval_multiple_other_base_models.sh
+│   ├── hf_eval_multiple_apertus_models.sh
+│   └── hf_eval_multiple_apertus_base_models.sh
+├── containers/                      # Container specs (Docker, env.toml for enroot/pyxis)
+│   ├── Dockerfile                   # CUDA 9.0+PTX, vLLM, FlashAttention-3
+│   ├── env.toml                     # Standard container config
+│   ├── env_nemo.toml                # NeMo-based container config
+│   └── ngc-25.12.toml               # NGC PyTorch with advanced NCCL config
+└── lm_eval_reference/               # Bundled lm-evaluation-harness reference (224 tasks)
 ```
 
 ---
@@ -345,8 +353,6 @@ The pipeline runs inside containers managed by enroot/pyxis on SLURM. Three cont
 | Config | Base Image | Use Case |
 |--------|-----------|----------|
 | `env.toml` | Pre-built `evals-vllm-cuda.sqsh` | Standard HF evals |
-| `env_nemo.toml` | NGC PyTorch | NeMo-based evaluations, default for `evaluate.sbatch` |
-| `ngc-25.12.toml` | NGC PyTorch 25.12 | Advanced NCCL/GDR optimization |
 
 Dependencies (lm-eval-harness, vLLM, etc.) are installed at runtime inside the container via `pip install`. This ensures the latest versions but adds ~2-3 minutes of startup overhead per job.
 
