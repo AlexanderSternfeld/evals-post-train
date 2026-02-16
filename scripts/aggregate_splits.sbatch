@@ -74,7 +74,7 @@ echo "Merging results into: $MERGED_DIR"
 MERGE_CMD="cd $PWD && python -m scripts.alignment.merge_split_results --split_dirs ${SPLIT_DIRS[*]} --output_dir $MERGED_DIR"
 echo "Merge command: $MERGE_CMD"
 
-srun -ul --environment=./containers/env_nemo.toml bash -c " \
+srun -ul --environment=./containers/env.toml bash -c " \
     pip install --no-cache-dir --upgrade \"git+https://github.com/ymetz/lm-evaluation-harness.git\" && \
     pip install --no-cache-dir --upgrade --no-deps \
         \"huggingface-hub>=1.3.0,<2.0\" \
@@ -95,7 +95,7 @@ DURATION=${EVAL_DURATION:-0}
 echo "Uploading merged results to wandb"
 WANDB_CMD="cd $PWD && python -m scripts.alignment.update_wandb_alignment --entity $WANDB_ENTITY --project $WANDB_PROJECT --logs_root $MERGED_DIR --name $NAME --main_metrics $TABLE_METRICS --eval_duration $DURATION"
 echo "Running: $WANDB_CMD"
-srun -ul --environment=./containers/env_nemo.toml bash -c " \
+srun -ul --environment=./containers/env.toml bash -c " \
     $WANDB_CMD
 "
 

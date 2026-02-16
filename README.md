@@ -48,8 +48,6 @@ evals/
 ├── containers/                      # Container specs (Docker, env.toml for enroot/pyxis)
 │   ├── Dockerfile                   # CUDA 9.0+PTX, vLLM, FlashAttention-3
 │   ├── env.toml                     # Standard container config
-│   ├── env_nemo.toml                # NeMo-based container config
-│   └── ngc-25.12.toml               # NGC PyTorch with advanced NCCL config
 └── lm_eval_reference/               # Bundled lm-evaluation-harness reference (224 tasks)
 ```
 
@@ -67,7 +65,7 @@ evals/
 | `multi-lingual` | 10 tasks | Apertus benchmark suite with multi-lingual evaluation |
 | `apertus-previous` | 14 tasks | Apertus benchmark suite with multi-lingual evaluation |
 | `olmo-easy` | 21 tasks | Base Easy Suite: perplexity/BPB-style evaluation (mmlu, hellaswag, arc, etc.) |
-| `olmo-main` | 18 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
+| `olmo-main` | 23 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
 | `olmo-heldout` | 2 tasks | Held-out Suite: mmlu_pro, bbh |
 | `olmo-safety` | 4 tasks | Safety Suite: harmbench, toxigen, wmdp, bbq |
 | `olmo-longcontext` | 1 task | Long-Context: RULER (8192 tokens) |

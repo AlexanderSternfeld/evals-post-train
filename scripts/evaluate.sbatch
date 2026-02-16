@@ -300,13 +300,13 @@ START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   # install once
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
 
   # run 4 ranks
-  srun -n $MP --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c "unset SSL_CERT_FILE; $CMD"
+  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $CMD"
 else
   # hf/vllm unchanged (single task)
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -lc "
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -lc "
     set -euo pipefail
     unset SSL_CERT_FILE
 
@@ -341,7 +341,7 @@ else
     WANDB_CMD="cd $PWD && python -m scripts.alignment.update_wandb_alignment --entity $WANDB_ENTITY --project $WANDB_PROJECT --logs_root $HARNESS_EVAL_DIR --name $NAME --main_metrics $TABLE_METRICS --eval_duration $DURATION"
     echo "Running command to upload results to wandb:"
     echo "$WANDB_CMD"
-    srun -ul --mpi=pmix --environment=./containers/env_nemo.toml bash -c " \
+    srun -ul --mpi=pmix --environment=./containers/env.toml bash -c " \
         $WANDB_CMD
     "
 fi
