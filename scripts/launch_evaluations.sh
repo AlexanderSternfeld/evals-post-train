@@ -8,7 +8,10 @@
 # Modes:
 
 # Apertus:
-#   default          -  Apertus multilingual suite
+#   default          - Apertus multilingual suite
+#   multi-lingual    - Multi-lingual suite (taken from 1.0)
+#   apertus-previous - Apertus previous benchmark suite (from 1.0)
+#   eval-debug       - Small set of loglikelihood and generative benchmarks to test eval script
 #
 # Olmo3:
 #   olmo-easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
@@ -92,7 +95,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- Validate mode ---
-VALID_MODES=("default" "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete")
+VALID_MODES=("default" "multi-lingual" "apertus-previous"  "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete" "eval-debug")
 if [[ ! " ${VALID_MODES[*]} " =~ " ${EVAL_MODE} " ]]; then
     echo "Error: Invalid mode '$EVAL_MODE'"
     echo "Valid modes: ${VALID_MODES[*]}"
@@ -117,7 +120,7 @@ fi
 
 # --- Environment defaults ---
 export WANDB_ENTITY=${WANDB_ENTITY:-apertus}
-export WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-post-train-test}
+export WANDB_PROJECT=${WANDB_PROJECT:-apertus-1.5-post-training-v0.0}
 export NUM_SPLITS
 export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
 # Global checkpoint iteration override for Megatron checkpoints.
@@ -166,6 +169,10 @@ case "$EVAL_MODE" in
     "olmo-complete")
         export TASKS=./configs/olmo/olmo3_complete.txt
         export TABLE_METRICS=./configs/olmo/olmo3_complete_main_table.txt
+        ;;
+    "eval-debug")
+        export TASKS=./configs/apertus/eval_debug.txt
+        export TABLE_METRICS=./configs/olmo/eval_debug_main_table.txt
         ;;
 esac
 

@@ -67,8 +67,8 @@ BS=${BS:-"auto:20"}
 SIZE=${SIZE:-1}
 BOS=${BOS:-false}
 LOGS_ROOT=${LOGS_ROOT:-/capstor/store/cscs/swissai/infra01/eval-logs}
-TASKS=${TASKS:-./configs/apertus/tasks_constrained.txt}
-TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_constrained_main_table.txt}
+TASKS=${TASKS:-./configs/apertus/tasks_default.txt}
+TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_default_main_table.txt}
 WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
 LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-hf}
@@ -262,6 +262,7 @@ pip install --no-cache-dir --upgrade --no-deps \
     \"accelerate>=1.1.0\" \
     \"antlr4-python3-runtime==4.11\" \
     datasketch \
+    tokenizers \
     mistral-common \
     sympy \
     math_verify \
@@ -276,7 +277,8 @@ pip install --no-cache-dir --upgrade --no-deps \
 VLLM_WHEEL="https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl"
 
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
-  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps \"$VLLM_WHEEL\" ray cloudpickle msgspec"
+    #  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps vllm ray cloudpickle msgspec"
+    INSTALL_CMD="$INSTALL_CMD && pip install ray flashinfer-python"
 fi
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
@@ -302,10 +304,21 @@ if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   # install once
   srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
 
-  # run 4 ranks
+  # run MP ranks - todo: fix
   srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $CMD"
+elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
+  # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
+
+    $INSTALL_CMD
+    # Make torch CUDA libs discoverable for vllm._C import
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+    $CMD
+    "
 else
-  # hf/vllm unchanged (single task)
+  # hf (via accelerate)
   srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -lc "
     set -euo pipefail
     unset SSL_CERT_FILE
