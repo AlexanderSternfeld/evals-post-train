@@ -23,6 +23,7 @@ gsm8k_platinum_cot_zeroshot
 hendrycks_math
 mathqa
 mgsm_en_cot
+minerva_math
 # Coding
 humaneval_instruct
 mbpp_instruct

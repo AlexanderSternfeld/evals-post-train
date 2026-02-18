@@ -72,7 +72,7 @@ TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_default_main_table.txt}
 WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
 LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-hf}
-APPLY_CHAT_TEMPLATE=${APPLY_CHAT_TEMPLATE:-false}
+APPLY_CHAT_TEMPLATE=${APPLY_CHAT_TEMPLATE:-true}
 
 export WANDB_API_KEY=${WANDB_API_KEY:-$(cat ./scripts/wandb_api_key.txt)}
 
@@ -205,12 +205,12 @@ COMMON_EVAL_ARGS=(
 	--trust_remote_code
 	--batch_size $BS
 	--tasks $TASKS
-	--output $HARNESS_EVAL_DIR
+	--output_path $HARNESS_EVAL_DIR
 	--max_batch_size 32
 	--log_samples
 	--write_out
 	--confirm_run_unsafe_code
-    # --cache_requests true
+        --cache_requests true
     --gen_kwargs max_gen_toks=$MAX_NEW_TOKENS
 )
 
@@ -265,6 +265,7 @@ pip install --no-cache-dir --upgrade --no-deps \
     tokenizers \
     mistral-common \
     sympy \
+    spacy \
     math_verify \
     latex2sympy2_extended \
     wonderwords \

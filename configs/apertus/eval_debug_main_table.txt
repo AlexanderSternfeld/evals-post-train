@@ -7,5 +7,5 @@ humaneval_instruct/pass@1
 acp_mcq_cot_2shot/exact_match
 ifeval/prompt_level_loose_acc
 harmbench/score
-
+minerva_math/exact_match
 
