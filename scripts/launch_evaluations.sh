@@ -6,13 +6,23 @@
 #   bash launch_evaluations.sh <mode> [options]
 #
 # Modes:
-#   easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
-#   main        - Base Main Suite (gsm8k_cot, humaneval, arc, ...)
-#   heldout     - Held-out Suite (mmlu_pro, bbh)
-#   safety      - Safety (harmbench, toxigen, wmdp, bbq)
-#   longcontext - Long-Context (RULER)
-#   complete    - All suites combined (default, excludes long-context)
+
+# Apertus:
+#   default          - Apertus multilingual suite
+#   multi-lingual    - Multi-lingual suite (taken from 1.0)
+#   apertus-previous - Apertus previous benchmark suite (from 1.0)
+#   eval-debug       - Small set of loglikelihood and generative benchmarks to test eval script
 #   single      - Run a single task (requires --task <task_name>)
+
+#
+# Olmo3:
+#   olmo-easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
+#   olmo-main        - Base Main Suite (gsm8k_cot, humaneval, arc, ...)
+#   olmo-heldout     - Held-out Suite (mmlu_pro, bbh)
+#   olmo-safety      - Safety (harmbench, toxigen, wmdp, bbq)
+#   olmo-longcontext - Long-Context (RULER)
+#   olmo-complete    - All suites combined (default, excludes long-context)
+
 #
 # Model selection (pick one):
 #   --model <path>            - Single HF model or local checkpoint path
@@ -94,7 +104,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- Validate mode ---
-VALID_MODES=("default" "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete" "single")
+VALID_MODES=("default" "multi-lingual" "apertus-previous"  "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete" "eval-debug" "single")
 if [[ ! " ${VALID_MODES[*]} " =~ " ${EVAL_MODE} " ]]; then
     echo "Error: Invalid mode '$EVAL_MODE'"
     echo "Valid modes: ${VALID_MODES[*]}"
@@ -131,7 +141,7 @@ fi
 
 # --- Environment defaults ---
 export WANDB_ENTITY=${WANDB_ENTITY:-apertus}
-export WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-post-train-test}
+export WANDB_PROJECT=${WANDB_PROJECT:-apertus-1.5-post-training-v0.0}
 export NUM_SPLITS
 export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
 # Global checkpoint iteration override for Megatron checkpoints.
@@ -141,8 +151,16 @@ export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
 # --- Configure task suite ---
 case "$EVAL_MODE" in
     "default")
-        export TASKS=./configs/apertus/task_multilingual.txt
-        export TABLE_METRICS=./configs/apertus/task_multilingual_main_table.txt
+        export TASKS=./configs/apertus/tasks_default.txt
+        export TABLE_METRICS=./configs/apertus/tasks_default_main_table.txt
+        ;;
+    "multi-lingual")
+        export TASKS=./configs/apertus/tasks_multilingual.txt
+        export TABLE_METRICS=./configs/apertus/tasks_multilingual_main_table.txt
+        ;;
+    "apertus-previous")
+        export TASKS=./configs/apertus/tasks_english.txt
+        export TABLE_METRICS=./configs/apertus/tasks_english_main_table.txt
         ;;
     "olmo-easy")
         export TASKS=./configs/olmo/olmo3_easy.txt
@@ -172,6 +190,10 @@ case "$EVAL_MODE" in
     "olmo-complete")
         export TASKS=./configs/olmo/olmo3_complete.txt
         export TABLE_METRICS=./configs/olmo/olmo3_complete_main_table.txt
+        ;;
+    "eval-debug")
+        export TASKS=./configs/apertus/eval_debug.txt
+        export TABLE_METRICS=./configs/olmo/eval_debug_main_table.txt
         ;;
     "single")
         export TASKS="$SINGLE_TASK"

@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --account=a-infra01-1
-#SBATCH --cpus-per-task=288
+#SBATCH --ntasks-per-node=4
+#SBATCH --cpus-per-task=72
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=evaluation
 #SBATCH --mem=460000
@@ -66,8 +67,8 @@ BS=${BS:-"auto:20"}
 SIZE=${SIZE:-1}
 BOS=${BOS:-false}
 LOGS_ROOT=${LOGS_ROOT:-/capstor/store/cscs/swissai/infra01/eval-logs}
-TASKS=${TASKS:-./configs/apertus/tasks_constrained.txt}
-TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_constrained_main_table.txt}
+TASKS=${TASKS:-./configs/apertus/tasks_default.txt}
+TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_default_main_table.txt}
 WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
 LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-hf}
@@ -259,9 +260,10 @@ pip install --no-cache-dir --upgrade --no-deps \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
     \"accelerate>=1.1.0\" \
-    \"antlr4-python3-runtime==4.13.2\" \
+    \"antlr4-python3-runtime==4.11\" \
     datasketch \
     segtok \
+    tokenizers \
     mistral-common \
     sympy \
     math_verify \
@@ -273,13 +275,15 @@ pip install --no-cache-dir --upgrade --no-deps \
     hf-transfer \
     \"peft>=0.2.0\" "
 
+VLLM_WHEEL="https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl"
+
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
-    INSTALL_CMD="$INSTALL_CMD && \
-pip install --no-cache-dir --upgrade --no-deps \
-    \"https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl\" ray cloudpickle msgspec &&
-    export LD_LIBRARY_PATH="/usr/local/lib/python3.12/dist-packages/torch/lib:${LD_LIBRARY_PATH:-}" "
-elif [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM "
+    #  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps vllm ray cloudpickle msgspec"
+    INSTALL_CMD="$INSTALL_CMD && pip install ray flashinfer-python"
+fi
+
+if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
+  INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"
 fi
 
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
@@ -298,16 +302,34 @@ echo "Starting timing for installation and evaluation..."
 START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    srun --mpi=pmix --ntasks-per-node=$MP -ul --environment=./containers/env_nemo.toml bash -c " \
-        unset SSL_CERT_FILE && \
-        $INSTALL_CMD && \
-        $CMD
+  # install once
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+
+  # run MP ranks - todo: fix
+  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $CMD"
+elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
+  # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
+
+    $INSTALL_CMD
+    # Make torch CUDA libs discoverable for vllm._C import
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+    $CMD
     "
 else
-    srun --mpi=pmix -ul --environment=./containers/env_nemo.toml bash -c " \
-        unset SSL_CERT_FILE && \
-        $INSTALL_CMD && \
-        $CMD
+  # hf (via accelerate)
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
+
+    $INSTALL_CMD
+
+    # Make torch CUDA libs discoverable for vllm._C import - is just ignored for Huggingface
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+
+    $CMD
     "
 fi
 
@@ -333,7 +355,7 @@ else
     WANDB_CMD="cd $PWD && python -m scripts.alignment.update_wandb_alignment --entity $WANDB_ENTITY --project $WANDB_PROJECT --logs_root $HARNESS_EVAL_DIR --name $NAME --main_metrics $TABLE_METRICS --eval_duration $DURATION"
     echo "Running command to upload results to wandb:"
     echo "$WANDB_CMD"
-    srun -ul --mpi=pmix --environment=./containers/env_nemo.toml bash -c " \
+    srun -ul --mpi=pmix --environment=./containers/env.toml bash -c " \
         $WANDB_CMD
     "
 fi
