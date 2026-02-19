@@ -12,6 +12,8 @@
 #   multi-lingual    - Multi-lingual suite (taken from 1.0)
 #   apertus-previous - Apertus previous benchmark suite (from 1.0)
 #   eval-debug       - Small set of loglikelihood and generative benchmarks to test eval script
+#   single      - Run a single task (requires --task <task_name>)
+
 #
 # Olmo3:
 #   olmo-easy        - Base Easy Suite (minerva_math, mmlu, hellaswag, ...)
@@ -20,6 +22,7 @@
 #   olmo-safety      - Safety (harmbench, toxigen, wmdp, bbq)
 #   olmo-longcontext - Long-Context (RULER)
 #   olmo-complete    - All suites combined (default, excludes long-context)
+
 #
 # Model selection (pick one):
 #   --model <path>            - Single HF model or local checkpoint path
@@ -30,6 +33,7 @@
 #
 # Options:
 #   --name <name>        - Override the eval run name (default: auto-derived from model path)
+#   --task <task>         - Task name for 'single' mode (e.g. hellaswag, gsm8k_cot)
 #   --chat-template      - Apply chat template (auto-detected for Instruct/Chat/SFT/DPO models)
 #   --no-chat-template   - Force disable chat template
 #   --tokenizer <tok>    - Custom tokenizer (default: same as model)
@@ -55,6 +59,9 @@
 #
 #   # Use default EVALUATION_SCRIPTS (edit the array below)
 #   bash launch_evaluations.sh complete --splits 4
+#
+#   # Run a single task
+#   bash launch_evaluations.sh single --task hellaswag --model meta-llama/Llama-3.1-8B-Instruct
 
 set -euo pipefail
 
@@ -72,6 +79,7 @@ BOS_FLAG=""
 BACKEND_FLAG=""
 FEWSHOT_FLAG=""
 MEGATRON_ITER=""
+SINGLE_TASK=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -80,6 +88,7 @@ while [[ $# -gt 0 ]]; do
         --script)       SCRIPT_PATH="$2";             shift 2 ;;
         --splits)       NUM_SPLITS="$2";              shift 2 ;;
         --num-fewshot)  FEWSHOT_FLAG="$2";            shift 2 ;;
+        --task)         SINGLE_TASK="$2";             shift 2 ;;
         --chat-template)    CHAT_TEMPLATE_OVERRIDE="true";  shift ;;
         --no-chat-template) CHAT_TEMPLATE_OVERRIDE="false"; shift ;;
         --tokenizer)    CUSTOM_TOKENIZER="$2";        shift 2 ;;
@@ -95,10 +104,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- Validate mode ---
-VALID_MODES=("default" "multi-lingual" "apertus-previous"  "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete" "eval-debug")
+VALID_MODES=("default" "multi-lingual" "apertus-previous"  "olmo-easy" "olmo-main" "olmo-heldout" "olmo-safety" "olmo-longcontext" "olmo-complete" "eval-debug" "single")
 if [[ ! " ${VALID_MODES[*]} " =~ " ${EVAL_MODE} " ]]; then
     echo "Error: Invalid mode '$EVAL_MODE'"
     echo "Valid modes: ${VALID_MODES[*]}"
+    exit 1
+fi
+
+# --- Validate single mode ---
+if [[ "$EVAL_MODE" == "single" ]]; then
+    if [[ -z "$SINGLE_TASK" ]]; then
+        echo "Error: 'single' mode requires --task <task_name>"
+        echo "Example: bash launch_evaluations.sh single --task hellaswag --model meta-llama/Llama-3.1-8B"
+        exit 1
+    fi
+elif [[ -n "$SINGLE_TASK" ]]; then
+    echo "Error: --task can only be used with 'single' mode"
     exit 1
 fi
 
@@ -174,6 +195,11 @@ case "$EVAL_MODE" in
         export TASKS=./configs/apertus/eval_debug.txt
         export TABLE_METRICS=./configs/olmo/eval_debug_main_table.txt
         ;;
+    "single")
+        export TASKS="$SINGLE_TASK"
+        export TABLE_METRICS="$SINGLE_TASK"
+        export WANDB_PROJECT="${WANDB_PROJECT}-single"
+        ;;
 esac
 
 # --- Validate split count vs task count ---
@@ -226,6 +252,7 @@ auto_derive_name() {
 echo "======================================"
 echo "Apertus Evaluation Launcher"
 echo "  Mode:   $EVAL_MODE"
+[[ "$EVAL_MODE" == "single" ]] && echo "  Task:   $SINGLE_TASK"
 echo "  Splits: $NUM_SPLITS"
 
 # --- Few-shot override ---

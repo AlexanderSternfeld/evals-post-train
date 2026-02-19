@@ -14,11 +14,14 @@ bash scripts/launch_evaluations.sh default --model meta-llama/Llama-3.1-8B-Instr
 # Launch Megatron checkpoint without conversion (TODO: Verify), Megatron-iter defaults to: latest
 bash scripts/launch_evaluations.sh olmo-easy --model /capstor/store/../apertus-.../checkpoints/ --backend megatron_lm --name Megatron-Test-260216 --megatron-iter 4000000
 
-# Launch with vllm backend
+# Launch with vllm backend - recommended!
 bash scripts/launch_evaluations.sh olmo-easy --model /capstor/store/../apertus-.../checkpoints/ --backend vllm
 
 # Evaluate a base model with 5-shot and easy eval set (matching OLMo3 technical report settings)
 bash scripts/launch_evaluations.sh olmo-easy --model Qwen/Qwen2.5-7B --num-fewshot 5
+
+# Evaluate a small model on a single task, useful for testing newly implemented tasks
+bash scripts/launch_evaluations.sh single --task multijail --model meta-llama/Llama-3.2-3B --backend vllm
 ```
 
 ## The Launch Script
@@ -38,6 +41,7 @@ bash scripts/launch_evaluations.sh olmo-easy --model Qwen/Qwen2.5-7B --num-fewsh
 | `olmo-safety` | 4 tasks | Safety Suite: harmbench, toxigen, wmdp, bbq |
 | `olmo-longcontext` | 1 task | Long-Context: RULER (8192 tokens) |
 | `olmo-complete` | 30 tasks | Union of all above (excludes long-context), deduplicated |
+| `single` | 1 task | One task, user-specified through `--task` |
 
 Each mode has a corresponding task list (`configs/olmo3_<mode>.txt`) and metric config (`configs/olmo3_<mode>_main_table.txt`). Results are logged to separate W&B projects per mode (e.g., `swissai-evals-olmo3-easy`), except `complete` which uses the base project name.
 
@@ -72,6 +76,7 @@ bash scripts/launch_evaluations.sh <mode>
 | `--num-fewshot N` | Override num_fewshot globally. Tasks with explicit `num_fewshot: 0` in their YAML are never overridden. OLMo3 paper uses 5-shot for most MC tasks. |
 | `--backend <hf\|vllm>` | Inference backend (default: from sbatch script) |
 | `--splits K` | Split task list across K parallel SLURM nodes per model |
+
 
 ### Examples
 

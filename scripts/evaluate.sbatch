@@ -114,7 +114,7 @@ if [ -f "$TABLE_METRICS" ]; then
 fi
 
 # export HF_HOME=${HF_HOME:-/capstor/store/cscs/swissai/infra01/hf_home/}
-export HF_HOME=${HF_HOME:-/iopsstor/scratch/cscs/ymetz/huggingface}
+export HF_HOME=${HF_HOME:-/iopsstor/scratch/cscs/$USER/huggingface}
 GPUS_PER_NODE=4
 
 # Print configuration.
@@ -255,13 +255,14 @@ if echo "$TASKS" | grep -q "ruler"; then
     fi
 fi
 
-INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/ymetz/lm-evaluation-harness.git" && \
+INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/swiss-ai/lm-evaluation-harness.git" && \
 pip install --no-cache-dir --upgrade --no-deps \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
     \"accelerate>=1.1.0\" \
     \"antlr4-python3-runtime==4.11\" \
     datasketch \
+    segtok \
     tokenizers \
     mistral-common \
     sympy \
