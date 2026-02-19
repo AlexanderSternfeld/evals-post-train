@@ -255,7 +255,7 @@ if echo "$TASKS" | grep -q "ruler"; then
     fi
 fi
 
-INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/alexandersternfeld/lm-evaluation-harness.git" && \
+INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/swiss-ai/lm-evaluation-harness.git" && \
 pip install --no-cache-dir --upgrade --no-deps \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
