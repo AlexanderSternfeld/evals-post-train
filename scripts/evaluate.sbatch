@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --account=a-infra01-1
-#SBATCH --ntasks-per-node=4
-#SBATCH --cpus-per-task=72
+#SBATCH --cpus-per-task=200
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=evaluation
 #SBATCH --mem=460000
@@ -71,10 +70,12 @@ TASKS=${TASKS:-./configs/apertus/tasks_default.txt}
 TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_default_main_table.txt}
 WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
-LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-hf}
+LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-vllm}
 APPLY_CHAT_TEMPLATE=${APPLY_CHAT_TEMPLATE:-true}
 
-export WANDB_API_KEY=${WANDB_API_KEY:-$(cat ./scripts/wandb_api_key.txt)}
+export HF_TOKEN="${HF_TOKEN:-$(tr -d '\r\n' < ./scripts/hf_token.txt)}"
+export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.txt)}"
+
 
 # optional eval arguments
 MAX_LENGTH=${MAX_LENGTH:-4096}
@@ -256,7 +257,7 @@ if echo "$TASKS" | grep -q "ruler"; then
 fi
 
 INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/swiss-ai/lm-evaluation-harness.git" && \
-pip install --no-cache-dir --upgrade --no-deps \
+pip install --no-cache-dir --upgrade \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
     \"accelerate>=1.1.0\" \
@@ -275,13 +276,6 @@ pip install --no-cache-dir --upgrade --no-deps \
     langdetect \
     hf-transfer \
     \"peft>=0.2.0\" "
-
-VLLM_WHEEL="https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl"
-
-if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
-    #  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps vllm ray cloudpickle msgspec"
-    INSTALL_CMD="$INSTALL_CMD && pip install ray flashinfer-python"
-fi
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"

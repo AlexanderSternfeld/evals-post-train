@@ -41,7 +41,7 @@
 #   --num-fewshot N      - Override num_fewshot for all tasks (default: use task YAML defaults)
 #                          Note: tasks with num_fewshot=0 in YAML are never overridden.
 #                          OLMo3 uses 5-shot for most MC tasks; pass --num-fewshot 5 to match.
-#   --backend <backend>  - lm-eval backend: hf, vllm (default: from sbatch script)
+#   --backend <backend>  - lm-eval backend: hf, vllm, megatron_lm (default: from sbatch script)
 #   --splits K           - Split tasks across K parallel nodes per model
 #
 # Examples:
@@ -143,7 +143,7 @@ fi
 export WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 export WANDB_PROJECT=${WANDB_PROJECT:-apertus-1.5-post-training-v0.0}
 export NUM_SPLITS
-export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
+export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate_dbug.sbatch}
 # Global checkpoint iteration override for Megatron checkpoints.
 # Consumed by the runner and forwarded to evaluate.sbatch as CKPT_ITER.
 [[ -n "$MEGATRON_ITER" ]] && export CKPT_ITERATION="$MEGATRON_ITER"
