@@ -43,6 +43,7 @@
 #                          OLMo3 uses 5-shot for most MC tasks; pass --num-fewshot 5 to match.
 #   --backend <backend>  - lm-eval backend: hf, vllm, megatron_lm (default: from sbatch script)
 #   --splits K           - Split tasks across K parallel nodes per model
+#   --limit N            - Optional argument to pass as --limit to the lm-evaluation-harness, to limit the number of samples per task (default: no limit).
 #
 # Examples:
 #   # Single HF model, auto-detect everything
@@ -78,6 +79,7 @@ CUSTOM_TOKENIZER=""
 BOS_FLAG=""
 BACKEND_FLAG=""
 FEWSHOT_FLAG=""
+HARNESS_LIMIT=""
 MEGATRON_ITER=""
 SINGLE_TASK=""
 
@@ -95,6 +97,7 @@ while [[ $# -gt 0 ]]; do
         --bos)          BOS_FLAG="true";              shift ;;
         --backend)      BACKEND_FLAG="$2";            shift 2 ;;
         --megatron-iter) MEGATRON_ITER="$2";            shift 2 ;;
+        --limit) HARNESS_LIMIT="$2";            shift 2 ;;
         *)
             echo "Error: Unknown option '$1'"
             echo "Run with no arguments for usage."
@@ -143,7 +146,7 @@ fi
 export WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 export WANDB_PROJECT=${WANDB_PROJECT:-apertus-1.5-post-training-v0.0}
 export NUM_SPLITS
-export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate_dbug.sbatch}
+export SBATCH_SCRIPT=${SBATCH_SCRIPT:-scripts/evaluate.sbatch}
 # Global checkpoint iteration override for Megatron checkpoints.
 # Consumed by the runner and forwarded to evaluate.sbatch as CKPT_ITER.
 [[ -n "$MEGATRON_ITER" ]] && export CKPT_ITERATION="$MEGATRON_ITER"
@@ -257,6 +260,9 @@ echo "  Splits: $NUM_SPLITS"
 
 # --- Few-shot override ---
 [[ -n "$FEWSHOT_FLAG" ]] && export NUM_FEWSHOT="$FEWSHOT_FLAG"
+
+# --- Harness limit override ---
+[[ -n "$HARNESS_LIMIT" ]] && export HARNESS_LIMIT="$HARNESS_LIMIT"
 
 # --- Dispatch based on model selection mode ---
 

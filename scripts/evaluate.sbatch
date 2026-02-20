@@ -42,6 +42,7 @@ usage() {
 	echo " WANDB_PROJECT: WandB project name for uploading results (default: swissai-evals)."
     echo " LM_EVAL_BACKEND: Backend to use for lm-eval (default: hf). - options are: hf, vllm, megatron_lm"
     echo " CKPT_ITER: Megatron checkpoint iteration (integer). Required when LM_EVAL_BACKEND=megatron_lm."
+    echo " HARNESS_LIMIT: Optional argument to pass as --limit to the lm-evaluation-harness, to limit the number of samples per task (default: no limit)."
 	echo "For more information see the README: https://github.com/swiss-ai/evals?tab=readme-ov-file."
 }
 die() {
@@ -72,6 +73,7 @@ WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
 LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-vllm}
 APPLY_CHAT_TEMPLATE=${APPLY_CHAT_TEMPLATE:-true}
+HARNESS_LIMIT=${HARNESS_LIMIT:-""}
 
 export HF_TOKEN="${HF_TOKEN:-$(tr -d '\r\n' < ./scripts/hf_token.txt)}"
 export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.txt)}"
@@ -211,9 +213,13 @@ COMMON_EVAL_ARGS=(
 	--log_samples
 	--write_out
 	--confirm_run_unsafe_code
-        --cache_requests true
+    --cache_requests true
     --gen_kwargs max_gen_toks=$MAX_NEW_TOKENS
 )
+
+if [[ -n "${HARNESS_LIMIT}" ]]; then
+    COMMON_EVAL_ARGS+=(--limit $HARNESS_LIMIT)
+fi
 
 if [[ -n "${NUM_FEWSHOT}" ]]; then
 	COMMON_EVAL_ARGS+=(--num_fewshot $NUM_FEWSHOT)
@@ -298,10 +304,10 @@ START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   # install once
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
 
   # run MP ranks - todo: fix
-  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $CMD"
+  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $CMD"
 elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
   # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
   srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
@@ -315,7 +321,7 @@ elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
     "
 else
   # hf (via accelerate)
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -lc "
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -lc "
     set -euo pipefail
     unset SSL_CERT_FILE
 
