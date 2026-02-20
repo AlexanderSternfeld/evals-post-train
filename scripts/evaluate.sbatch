@@ -32,7 +32,6 @@ usage() {
 	echo " BS: Batch size."
 	echo " REVISION: Only used in huggingface models. If set, this revision of the model will be evaluated."
 	echo " SIZE: The (approximate) size of the model in billions of parameters. Used to set model parallelism (needs to be set in larger models)."
-	echo " LIMIT: The --limit argument to pass to lm-evaluation-harness. By default, it is unset."
 	echo " MAX_LENGTH: The maximum length of the input sequence to the model. By default, it is unset."
 	echo " MAX_NEW_TOKENS: The maximum number of new tokens to generate. By default, it is unset."
 	echo " BOS: Set this to 'true' if you wish to prepend the BOS token when evaluating models."
@@ -82,7 +81,6 @@ export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.
 # optional eval arguments
 MAX_LENGTH=${MAX_LENGTH:-4096}
 MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-512}
-LIMIT=${LIMIT:-""}
 NUM_FEWSHOT=${NUM_FEWSHOT:-""}
 
 # Task splitting support: set NUM_SPLITS and SPLIT_INDEX to distribute tasks across jobs
@@ -122,7 +120,7 @@ GPUS_PER_NODE=4
 
 # Print configuration.
 echo "Configuration set:"
-printf "MODEL=$MODEL\nNAME=$NAME\nTOKENIZER=$TOKENIZER\nBS=$BS\nREVISION=$REVISION\nSIZE=$SIZE\nLIMIT=$LIMIT\nBOS=$BOS\nTASKS=$TASKS\nMAX_LENGTH=$MAX_LENGTH\nWANDB_ENTITY=$WANDB_ENTITY\nWANDB_PROJECT=$WANDB_PROJECT\nLM_EVAL_BACKEND=$LM_EVAL_BACKEND\nLHF_HOME=$HF_HOME\n\n"
+printf "MODEL=$MODEL\nNAME=$NAME\nTOKENIZER=$TOKENIZER\nBS=$BS\nREVISION=$REVISION\nSIZE=$SIZE\nHARNESS_LIMIT=$HARNESS_LIMIT\nBOS=$BOS\nTASKS=$TASKS\nMAX_LENGTH=$MAX_LENGTH\nWANDB_ENTITY=$WANDB_ENTITY\nWANDB_PROJECT=$WANDB_PROJECT\nLM_EVAL_BACKEND=$LM_EVAL_BACKEND\nLHF_HOME=$HF_HOME\n\n"
 
 # Generic envs.
 export MASTER_ADDR=$(hostname)
@@ -228,10 +226,6 @@ fi
 if [[ $APPLY_CHAT_TEMPLATE = true ]]; then
 	COMMON_EVAL_ARGS+=(--apply_chat_template)
 	COMMON_EVAL_ARGS+=(--fewshot_as_multiturn)
-fi
-
-if [[ -n ${LIMIT} ]]; then
-	COMMON_EVAL_ARGS+=(--limit $LIMIT)
 fi
 
 # Detect long context length only when 'ruler' is among tasks.
