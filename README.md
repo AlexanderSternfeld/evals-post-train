@@ -1,6 +1,6 @@
 # SwissAI Evaluation Pipeline
 
-Evaluation infrastructure for benchmarking Large Language Models on SLURM clusters (CSCS Alps). Built on top of [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) with W&B integration for results tracking.
+Evaluation infrastructure for benchmarking Large Language Models on SLURM clusters (CSCS Alps). Built on top of [lm-evaluation-harness](https://github.com/swiss-ai/lm-evaluation-harness) with W&B integration for results tracking.
 
 ## Quick Start
 
@@ -457,6 +457,6 @@ Rule of thumb for fitting within the 12h limit: ensure `2.5 * percentage * model
 > [!NOTE]
 > **vLLM vs HF inference**: Generation task results (gsm8k, squadv2) differ between backends. Only compare results across models using the same backend. Likelihood tasks (hellaswag) may also differ slightly.
 
-- **Model parallelism**: Set `SIZE` for models >30B to enable sufficient model parallelism (e.g., `SIZE=70` for 70B models).
 - **Time limits**: The default 12h SLURM limit works for most evaluations. For large suites on large models, use `--splits` to parallelize.
 - **WANDB_API_KEY**: Must be available either as an environment variable or in `scripts/wandb_api_key.txt`.
+- **HF_TOKEN**: Must be available either as an environment variable or in  `scripts/hf_token.txt`.

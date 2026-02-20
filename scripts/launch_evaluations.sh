@@ -41,8 +41,9 @@
 #   --num-fewshot N      - Override num_fewshot for all tasks (default: use task YAML defaults)
 #                          Note: tasks with num_fewshot=0 in YAML are never overridden.
 #                          OLMo3 uses 5-shot for most MC tasks; pass --num-fewshot 5 to match.
-#   --backend <backend>  - lm-eval backend: hf, vllm (default: from sbatch script)
+#   --backend <backend>  - lm-eval backend: hf, vllm, megatron_lm (default: from sbatch script)
 #   --splits K           - Split tasks across K parallel nodes per model
+#   --limit N            - Optional argument to pass as --limit to the lm-evaluation-harness, to limit the number of samples per task (default: no limit).
 #
 # Examples:
 #   # Single HF model, auto-detect everything
@@ -78,6 +79,7 @@ CUSTOM_TOKENIZER=""
 BOS_FLAG=""
 BACKEND_FLAG=""
 FEWSHOT_FLAG=""
+HARNESS_LIMIT=""
 MEGATRON_ITER=""
 SINGLE_TASK=""
 
@@ -95,6 +97,7 @@ while [[ $# -gt 0 ]]; do
         --bos)          BOS_FLAG="true";              shift ;;
         --backend)      BACKEND_FLAG="$2";            shift 2 ;;
         --megatron-iter) MEGATRON_ITER="$2";            shift 2 ;;
+        --limit) HARNESS_LIMIT="$2";            shift 2 ;;
         *)
             echo "Error: Unknown option '$1'"
             echo "Run with no arguments for usage."
@@ -257,6 +260,9 @@ echo "  Splits: $NUM_SPLITS"
 
 # --- Few-shot override ---
 [[ -n "$FEWSHOT_FLAG" ]] && export NUM_FEWSHOT="$FEWSHOT_FLAG"
+
+# --- Harness limit override ---
+[[ -n "$HARNESS_LIMIT" ]] && export HARNESS_LIMIT="$HARNESS_LIMIT"
 
 # --- Dispatch based on model selection mode ---
 

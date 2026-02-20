@@ -17,7 +17,8 @@ squadv2
 truthfulqa_mc2
 truthfulqa_multilingual_mc2
 # Math
-gpqa_main_cot_zeroshot # Gated dataset https://huggingface.co/datasets/Idavidrein/gpqa
+# Gated dataset https://huggingface.co/datasets/Idavidrein/gpqa
+gpqa_main_cot_zeroshot
 gsm8k_cot
 gsm8k_platinum_cot_zeroshot
 hendrycks_math
@@ -51,7 +52,7 @@ include_base_new_45_gen_0shot
 switzerland_qa_0shot
 # Safety
 harmbench
-# hallulens - TODO: verify
+# hallulens
 toxigen
 wmdp
 

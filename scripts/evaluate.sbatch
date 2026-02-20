@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --account=a-infra01-1
-#SBATCH --ntasks-per-node=4
-#SBATCH --cpus-per-task=72
+#SBATCH --cpus-per-task=200
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=evaluation
 #SBATCH --mem=460000
@@ -33,7 +32,6 @@ usage() {
 	echo " BS: Batch size."
 	echo " REVISION: Only used in huggingface models. If set, this revision of the model will be evaluated."
 	echo " SIZE: The (approximate) size of the model in billions of parameters. Used to set model parallelism (needs to be set in larger models)."
-	echo " LIMIT: The --limit argument to pass to lm-evaluation-harness. By default, it is unset."
 	echo " MAX_LENGTH: The maximum length of the input sequence to the model. By default, it is unset."
 	echo " MAX_NEW_TOKENS: The maximum number of new tokens to generate. By default, it is unset."
 	echo " BOS: Set this to 'true' if you wish to prepend the BOS token when evaluating models."
@@ -43,6 +41,7 @@ usage() {
 	echo " WANDB_PROJECT: WandB project name for uploading results (default: swissai-evals)."
     echo " LM_EVAL_BACKEND: Backend to use for lm-eval (default: hf). - options are: hf, vllm, megatron_lm"
     echo " CKPT_ITER: Megatron checkpoint iteration (integer). Required when LM_EVAL_BACKEND=megatron_lm."
+    echo " HARNESS_LIMIT: Optional argument to pass as --limit to the lm-evaluation-harness, to limit the number of samples per task (default: no limit)."
 	echo "For more information see the README: https://github.com/swiss-ai/evals?tab=readme-ov-file."
 }
 die() {
@@ -71,15 +70,17 @@ TASKS=${TASKS:-./configs/apertus/tasks_default.txt}
 TABLE_METRICS=${TABLE_METRICS:-./configs/apertus/tasks_default_main_table.txt}
 WANDB_ENTITY=${WANDB_ENTITY:-apertus}
 WANDB_PROJECT=${WANDB_PROJECT:-swissai-evals-test}
-LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-hf}
+LM_EVAL_BACKEND=${LM_EVAL_BACKEND:-vllm}
 APPLY_CHAT_TEMPLATE=${APPLY_CHAT_TEMPLATE:-true}
+HARNESS_LIMIT=${HARNESS_LIMIT:-""}
 
-export WANDB_API_KEY=${WANDB_API_KEY:-$(cat ./scripts/wandb_api_key.txt)}
+export HF_TOKEN="${HF_TOKEN:-$(tr -d '\r\n' < ./scripts/hf_token.txt)}"
+export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.txt)}"
+
 
 # optional eval arguments
 MAX_LENGTH=${MAX_LENGTH:-4096}
 MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-512}
-LIMIT=${LIMIT:-""}
 NUM_FEWSHOT=${NUM_FEWSHOT:-""}
 
 # Task splitting support: set NUM_SPLITS and SPLIT_INDEX to distribute tasks across jobs
@@ -119,7 +120,7 @@ GPUS_PER_NODE=4
 
 # Print configuration.
 echo "Configuration set:"
-printf "MODEL=$MODEL\nNAME=$NAME\nTOKENIZER=$TOKENIZER\nBS=$BS\nREVISION=$REVISION\nSIZE=$SIZE\nLIMIT=$LIMIT\nBOS=$BOS\nTASKS=$TASKS\nMAX_LENGTH=$MAX_LENGTH\nWANDB_ENTITY=$WANDB_ENTITY\nWANDB_PROJECT=$WANDB_PROJECT\nLM_EVAL_BACKEND=$LM_EVAL_BACKEND\nLHF_HOME=$HF_HOME\n\n"
+printf "MODEL=$MODEL\nNAME=$NAME\nTOKENIZER=$TOKENIZER\nBS=$BS\nREVISION=$REVISION\nSIZE=$SIZE\nHARNESS_LIMIT=$HARNESS_LIMIT\nBOS=$BOS\nTASKS=$TASKS\nMAX_LENGTH=$MAX_LENGTH\nWANDB_ENTITY=$WANDB_ENTITY\nWANDB_PROJECT=$WANDB_PROJECT\nLM_EVAL_BACKEND=$LM_EVAL_BACKEND\nLHF_HOME=$HF_HOME\n\n"
 
 # Generic envs.
 export MASTER_ADDR=$(hostname)
@@ -210,9 +211,13 @@ COMMON_EVAL_ARGS=(
 	--log_samples
 	--write_out
 	--confirm_run_unsafe_code
-        --cache_requests true
+    --cache_requests true
     --gen_kwargs max_gen_toks=$MAX_NEW_TOKENS
 )
+
+if [[ -n "${HARNESS_LIMIT}" ]]; then
+    COMMON_EVAL_ARGS+=(--limit $HARNESS_LIMIT)
+fi
 
 if [[ -n "${NUM_FEWSHOT}" ]]; then
 	COMMON_EVAL_ARGS+=(--num_fewshot $NUM_FEWSHOT)
@@ -221,10 +226,6 @@ fi
 if [[ $APPLY_CHAT_TEMPLATE = true ]]; then
 	COMMON_EVAL_ARGS+=(--apply_chat_template)
 	COMMON_EVAL_ARGS+=(--fewshot_as_multiturn)
-fi
-
-if [[ -n ${LIMIT} ]]; then
-	COMMON_EVAL_ARGS+=(--limit $LIMIT)
 fi
 
 # Detect long context length only when 'ruler' is among tasks.
@@ -256,7 +257,7 @@ if echo "$TASKS" | grep -q "ruler"; then
 fi
 
 INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/swiss-ai/lm-evaluation-harness.git" && \
-pip install --no-cache-dir --upgrade --no-deps \
+pip install --no-cache-dir --upgrade \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
     \"accelerate>=1.1.0\" \
@@ -275,13 +276,6 @@ pip install --no-cache-dir --upgrade --no-deps \
     langdetect \
     hf-transfer \
     \"peft>=0.2.0\" "
-
-VLLM_WHEEL="https://github.com/vllm-project/vllm/releases/download/v0.15.1/vllm-0.15.1+cu130-cp38-abi3-manylinux_2_35_aarch64.whl"
-
-if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
-    #  INSTALL_CMD="$INSTALL_CMD && pip install --no-cache-dir --upgrade --no-deps vllm ray cloudpickle msgspec"
-    INSTALL_CMD="$INSTALL_CMD && pip install ray flashinfer-python"
-fi
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"
@@ -304,10 +298,10 @@ START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   # install once
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
 
   # run MP ranks - todo: fix
-  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml bash -c "unset SSL_CERT_FILE; $CMD"
+  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $CMD"
 elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
   # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
   srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
@@ -321,7 +315,7 @@ elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
     "
 else
   # hf (via accelerate)
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml bash -lc "
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -lc "
     set -euo pipefail
     unset SSL_CERT_FILE
 
