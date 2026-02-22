@@ -30,8 +30,7 @@ minerva_math
 humaneval_instruct
 mbpp_instruct
 # Reasoning
-acp_bool_cot_2shot
-acp_mcq_cot_2shot
+acp_bench
 # Multilingual
 arc_multilingual
 bbh

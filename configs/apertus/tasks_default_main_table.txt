@@ -8,7 +8,7 @@ agieval/acc
 arc_challenge_chat/exact_match
 commonsense_qa/acc
 global_mmlu_gen_0shot/exact_match
-hellaswag/acc
+hellaswag/acc_norm
 mmlu_flan_cot_zeroshotexact_match,ordered-extract
 mmlu_pro/exact_match
 piqa/acc_norm
@@ -27,8 +27,7 @@ minerva_math/exact_match
 humaneval_instruct/pass@1
 mbpp_instructzpass@1
 # Reasoning
-acp_bool_cot_2shot/exact_match
-acp_mcq_cot_2shot/exact_match
+acp_bench/exact_match
 # Multilingual
 arc_multilingual/acc
 bbh/exact_match
@@ -44,7 +43,7 @@ multi-if/prompt_level_loose_acc
 # Bias
 bbq/acc
 # Cultural knowledge
-blend_sample/acc
+blend_sample/acc_norm
 cultural_bench/acc_norm
 include_base_44_gen_0shot/exact_match
 include_base_new_45_gen_0shot/exact_match
@@ -52,7 +51,7 @@ switzerland_qa_0shot/exact_match
 # Safety
 harmbench/score
 # hallulens - TODO: verify
-toxigen/acc_norm
+toxigen/acc
 wmdp/acc
 
 

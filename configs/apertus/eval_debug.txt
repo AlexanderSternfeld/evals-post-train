@@ -9,7 +9,7 @@ arc_challenge_chat
 commonsense_qa
 gsm8k_cot
 humaneval_instruct
-acp_mcq_cot_2shot
+acp_bench
 ifeval
 # harmbench
 minerva_math

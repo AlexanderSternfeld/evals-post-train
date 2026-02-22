@@ -4,7 +4,7 @@ arc_challenge_chat/exact_match
 commonsense_qa/acc
 gsm8k_cot/exact_match
 humaneval_instruct/pass@1
-acp_mcq_cot_2shot/exact_match
+acp_bench/exact_match
 ifeval/prompt_level_loose_acc
 harmbench/score
 minerva_math/exact_match
