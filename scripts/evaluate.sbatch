@@ -275,7 +275,9 @@ pip install --no-cache-dir --upgrade \
     immutabledict \
     langdetect \
     hf-transfer \
-    \"peft>=0.2.0\" "
+    \"peft>=0.2.0\" \
+    subset2evaluate \
+    unbabel-comet"
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"

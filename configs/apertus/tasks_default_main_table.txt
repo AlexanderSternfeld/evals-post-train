@@ -53,5 +53,7 @@ harmbench/score
 # hallulens - TODO: verify
 toxigen/acc
 wmdp/acc
+# translations
+wmt_translation/cometkiwi22
 
 
