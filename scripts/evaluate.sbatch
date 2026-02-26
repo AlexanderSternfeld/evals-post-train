@@ -211,7 +211,7 @@ COMMON_EVAL_ARGS=(
 	--log_samples
 	--write_out
 	--confirm_run_unsafe_code
-    --cache_requests true
+    # --cache_requests true - causes problems for long model names due to file name length limits
     --gen_kwargs max_gen_toks=$MAX_NEW_TOKENS
 )
 
@@ -286,7 +286,7 @@ if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
 elif [[ $LM_EVAL_BACKEND == "hf" ]]; then
     CMD="accelerate launch --num_processes=4  -m lm_eval --model $LM_EVAL_BACKEND --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
 elif [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    CMD="python -m lm_eval --model megatron_lm --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
+    CMD="torchrun --nproc-per-node=4 -m lm_eval --model megatron_lm --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
 fi
 
 echo "Installation command: $INSTALL_CMD"
@@ -297,11 +297,15 @@ echo "Starting timing for installation and evaluation..."
 START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-  # install once
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
 
-  # run MP ranks - todo: fix
-  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $CMD"
+    $INSTALL_CMD
+    # Make torch CUDA libs discoverable for vllm._C import
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+    $CMD
+    "
 elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
   # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
   srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
