@@ -24,8 +24,8 @@ mathqa/acc
 mgsm_en_cot_en/exact_match
 minerva_math/exact_match
 # Coding
-humaneval_instruct/pass@1
-mbpp_instructzpass@1
+humaneval_instruct/pass@10
+mbpp_instruct/pass_at_1
 # Reasoning
 acp_bench/exact_match
 # Multilingual
@@ -38,6 +38,7 @@ mlogiqa_gen/exact_match
 xcopa/acc
 xnli/acc
 # Instruction Following
+alpaca_eval/length_controlled_winrate
 ifeval/prompt_level_loose_acc
 multi-if/prompt_level_loose_acc
 # Bias

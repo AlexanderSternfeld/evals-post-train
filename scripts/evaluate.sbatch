@@ -76,6 +76,7 @@ HARNESS_LIMIT=${HARNESS_LIMIT:-""}
 
 export HF_TOKEN="${HF_TOKEN:-$(tr -d '\r\n' < ./scripts/hf_token.txt)}"
 export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.txt)}"
+export CSCS_SERVING_API="${CSCS_SERVING_API:-$(tr -d '\r\n' < ./scripts/cscs_serving_api_key.txt)}"
 
 
 # optional eval arguments
@@ -256,7 +257,7 @@ if echo "$TASKS" | grep -q "ruler"; then
     fi
 fi
 
-INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/swiss-ai/lm-evaluation-harness.git" && \
+INSTALL_CMD="pip install --no-cache-dir --upgrade "git+https://github.com/VnznzT/lm-evaluation-harness.git@alpaca_eval" && \
 pip install --no-cache-dir --upgrade \
     \"huggingface-hub>=1.3.0,<2.0\" \
     \"transformers==5.1.0\" \
@@ -275,7 +276,8 @@ pip install --no-cache-dir --upgrade \
     immutabledict \
     langdetect \
     hf-transfer \
-    \"peft>=0.2.0\" "
+    alpaca-eval>=0.6.2 \
+    \"peft>=0.2.0\"  "
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"

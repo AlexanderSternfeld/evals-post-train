@@ -39,6 +39,7 @@ mlogiqa_gen
 xcopa
 xnli
 # Instruction Following
+alpaca_eval
 ifeval
 multi-if
 # Bias
