@@ -34,6 +34,7 @@ bash scripts/launch_evaluations.sh single --task multijail --model meta-llama/Ll
 |------|-------|-------------|
 | `default` | 40 tasks | Full Apertus benchmark suite with basic evaluation |
 | `multi-lingual` | 10 tasks | Apertus benchmark suite with multi-lingual evaluation |
+| `pretrain` | 35 tasks | Apertus pretraining benchmark suite |
 | `apertus-previous` | 14 tasks | Apertus benchmark suite with multi-lingual evaluation |
 | `olmo-easy` | 21 tasks | Base Easy Suite: perplexity/BPB-style evaluation (mmlu, hellaswag, arc, etc.) |
 | `olmo-main` | 23 tasks | Base Main Suite: generation + MC (gsm8k_cot, humaneval, drop, etc.) |
@@ -43,7 +44,7 @@ bash scripts/launch_evaluations.sh single --task multijail --model meta-llama/Ll
 | `olmo-complete` | 30 tasks | Union of all above (excludes long-context), deduplicated |
 | `single` | 1 task | One task, user-specified through `--task` |
 
-Each mode has a corresponding task list (`configs/olmo3_<mode>.txt`) and metric config (`configs/olmo3_<mode>_main_table.txt`). Results are logged to separate W&B projects per mode (e.g., `swissai-evals-olmo3-easy`), except `complete` which uses the base project name.
+Each mode has a corresponding task list (`configs/olmo3_<mode>.txt`) and metric config (`configs/olmo3_<mode>_main_table.txt`). Results are logged to separate W&B projects per mode (e.g., `swissai-evals-olmo3-easy`).
 
 ### Model Selection Modes
 
@@ -209,7 +210,7 @@ Use `--num-fewshot 5` to match the OLMo3 paper settings. Tasks with hardcoded ex
 ```bash
 export TASKS=./configs/my_suite.txt
 export TABLE_METRICS=./configs/my_suite_main_table.txt
-bash scripts/launch_evaluations.sh complete --model my-model
+bash scripts/launch_evaluations.sh olmo-complete --model my-model
 ```
 
 Available task names can be found in `lm_eval_reference/tasks/` or by running `lm_eval --tasks list`.
