@@ -33,6 +33,7 @@ arc_multilingual/acc
 bbh/exact_match
 drop/f1
 hellaswag_multilingual/acc_norm
+lambada/acc
 lambada_multilingual/acc
 mlogiqa_gen/exact_match
 xcopa/acc
@@ -51,7 +52,7 @@ include_base_new_45_gen_0shot/exact_match
 switzerland_qa_0shot/exact_match
 # Safety
 harmbench/score
-# hallulens - TODO: verify
+hallulens/abstention
 toxigen/acc
 wmdp/acc
 # translations

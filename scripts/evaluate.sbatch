@@ -295,7 +295,7 @@ pip install --no-cache-dir --upgrade \
     hf-transfer \
     subset2evaluate \
     unbabel-comet \
-    \”alpaca-eval>=0.6.2\" \
+    \"alpaca-eval>=0.6.2\" \
     \"peft>=0.2.0\"  "
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
