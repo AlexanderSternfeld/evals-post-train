@@ -76,7 +76,25 @@ HARNESS_LIMIT=${HARNESS_LIMIT:-""}
 
 export HF_TOKEN="${HF_TOKEN:-$(tr -d '\r\n' < ./scripts/hf_token.txt)}"
 export WANDB_API_KEY="${WANDB_API_KEY:-$(tr -d '\r\n' < ./scripts/wandb_api_key.txt)}"
+export CSCS_SERVING_API="${CSCS_SERVING_API:-$(tr -d '\r\n' < ./scripts/cscs_serving_api_key.txt)}"
 
+warn_if_empty() {
+  local var="$1"
+  local msg="$2"
+
+  if [[ -z "${!var:-}" ]]; then
+    echo "WARNING: $var is not set. $msg" >&2
+  fi
+}
+
+warn_if_empty HF_TOKEN \
+  "This may cause Hugging Face rate-limit issues or prevent access to gated models/datasets."
+
+warn_if_empty WANDB_API_KEY \
+  "Weights & Biases logging is disabled. Results will NOT be uploaded."
+
+warn_if_empty CSCS_SERVING_API \
+  "Optional key missing. LLM-as-a-judge benchmarks via CSCS serving API will fail."
 
 # optional eval arguments
 MAX_LENGTH=${MAX_LENGTH:-4096}
@@ -185,7 +203,7 @@ VLLM_MEMORY_FRACTION=0.75
 if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
     COMMON_MODEL_ARGS="$COMMON_MODEL_ARGS,pretrained=$HF_CHECKPOINT_PATH,tokenizer=$TOKENIZER$MAYBE_REVISION,data_parallel_size=$DP,tensor_parallel_size=$MP,gpu_memory_utilization=$VLLM_MEMORY_FRACTION,enable_thinking=False"
 elif [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    COMMON_MODEL_ARGS="$COMMON_MODEL_ARGS,load=$MODEL,tokenizer_type=HuggingFaceTokenizer,tokenizer_model=$TOKENIZER$MAYBE_REVISION,tensor_model_parallel_size=$MP"
+    COMMON_MODEL_ARGS="$COMMON_MODEL_ARGS,load=$MODEL,tokenizer_type=HuggingFaceTokenizer,tokenizer_model=$TOKENIZER$MAYBE_REVISION,devices=4"
     if [[ "$CKPT_ITER" =~ ^[0-9]+$ ]]; then
         COMMON_MODEL_ARGS="$COMMON_MODEL_ARGS,ckpt_step=$CKPT_ITER"
     elif [[ "$CKPT_ITER" == "latest" ]]; then
@@ -211,7 +229,7 @@ COMMON_EVAL_ARGS=(
 	--log_samples
 	--write_out
 	--confirm_run_unsafe_code
-    --cache_requests true
+    # --cache_requests true - causes problems for long model names due to file name length limits
     --gen_kwargs max_gen_toks=$MAX_NEW_TOKENS
 )
 
@@ -275,9 +293,10 @@ pip install --no-cache-dir --upgrade \
     immutabledict \
     langdetect \
     hf-transfer \
-    \"peft>=0.2.0\" \
     subset2evaluate \
-    unbabel-comet"
+    unbabel-comet \
+    \”alpaca-eval>=0.6.2\" \
+    \"peft>=0.2.0\"  "
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
   INSTALL_CMD="$INSTALL_CMD && pip install megatron-core --no-deps && export MEGATRON_PATH=$(pwd)/Megatron-LM"
@@ -288,7 +307,7 @@ if [[ $LM_EVAL_BACKEND == "vllm" ]]; then
 elif [[ $LM_EVAL_BACKEND == "hf" ]]; then
     CMD="accelerate launch --num_processes=4  -m lm_eval --model $LM_EVAL_BACKEND --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
 elif [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-    CMD="python -m lm_eval --model megatron_lm --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
+    CMD="torchrun --nproc-per-node=4 -m lm_eval --model megatron_lm --model_args=$COMMON_MODEL_ARGS ${COMMON_EVAL_ARGS[@]}"
 fi
 
 echo "Installation command: $INSTALL_CMD"
@@ -299,11 +318,15 @@ echo "Starting timing for installation and evaluation..."
 START_TIME=$(date +%s)
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
-  # install once
-  srun -n 1 --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $INSTALL_CMD"
+  srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "
+    set -euo pipefail
+    unset SSL_CERT_FILE
 
-  # run MP ranks - todo: fix
-  srun -n $MP --mpi=pmix -ul --environment=./containers/env.toml --export=ALL,HF_TOKEN,HF_HOME,WANDB_API_KEY bash -c "unset SSL_CERT_FILE; $CMD"
+    $INSTALL_CMD
+    # Make torch CUDA libs discoverable for vllm._C import
+    export LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:\${LD_LIBRARY_PATH:-}
+    $CMD
+    "
 elif [[ $LM_EVAL_BACKEND == "vllm" ]]; then
   # vLLM needs to run with a single process that manages all GPUs, so we run the install and eval in the same command to avoid issues with environment persistence across srun calls
   srun -n 1 --mpi=pmix -ul --environment=./containers/env_vllm.toml bash -lc "

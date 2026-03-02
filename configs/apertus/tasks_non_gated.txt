@@ -22,8 +22,7 @@ gpqa_main_cot_zeroshot
 gsm8k_cot
 gsm8k_platinum_cot_zeroshot
 hendrycks_math
-# Currently gated in swiss-ai org - TODO: change
-# mathqa
+mathqa
 mgsm_en_cot
 minerva_math
 # Coding
@@ -36,8 +35,7 @@ arc_multilingual
 bbh
 drop
 lambada_multilingual
-# Currently gated in swiss-ai org - TODO: change
-# mlogiqa_gen
+mlogiqa_gen
 xcopa
 xnli
 # Instruction Following
@@ -47,7 +45,7 @@ multi-if
 bbq
 # Cultural knowledge
 # Currently gated in swiss-ai org - TODO: change
-# blend_sample
+blend_sample
 cultural_bench
 include_base_44_gen_0shot
 # include_base_new_45_gen_0shot

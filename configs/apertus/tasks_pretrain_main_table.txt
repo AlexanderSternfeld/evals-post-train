@@ -9,23 +9,22 @@ arc_challenge_chat/exact_match
 commonsense_qa/acc
 global_mmlu_gen_0shot/exact_match
 hellaswag/acc_norm
-mmlu_flan_cot_zeroshotexact_match,ordered-extract
+mmlu_flan_cot_fewshot/exact_match,ordered-extract
 mmlu_pro/exact_match
 piqa/acc_norm
 squadv2/f1
 truthfulqa_mc2/acc
 truthfulqa_multilingual_mc2/acc
 # Math
-gpqa_main_cot_zeroshot/acc
-gsm8k_cot/exact_match
-gsm8k_platinum_cot_zeroshot/exact_match
+gsm8k/exact_match
+gsm8k_platinum/exact_match
 hendrycks_math/exact_match
 mathqa/acc
-mgsm_en_cot_en/exact_match
+mgsm_en_cot/exact_match
 minerva_math/exact_match
 # Coding
-humaneval_instruct/pass@10
-mbpp_instruct/pass_at_1
+humaneval/pass@10
+mbpp/pass_at_1
 # Reasoning
 acp_bench/exact_match
 # Multilingual
@@ -33,14 +32,11 @@ arc_multilingual/acc
 bbh/exact_match
 drop/f1
 hellaswag_multilingual/acc_norm
+lambada/acc
 lambada_multilingual/acc
 mlogiqa_gen/exact_match
 xcopa/acc
 xnli/acc
-# Instruction Following
-alpaca_eval/length_controlled_winrate
-ifeval/prompt_level_loose_acc
-multi-if/prompt_level_loose_acc
 # Bias
 bbq/acc
 # Cultural knowledge
@@ -54,7 +50,5 @@ harmbench/score
 # hallulens - TODO: verify
 toxigen/acc
 wmdp/acc
-# translations
-wmt_translation/cometkiwi22
 
 
