@@ -293,7 +293,9 @@ pip install --no-cache-dir --upgrade \
     immutabledict \
     langdetect \
     hf-transfer \
-    alpaca-eval>=0.6.2 \
+    subset2evaluate \
+    unbabel-comet \
+    \”alpaca-eval>=0.6.2\" \
     \"peft>=0.2.0\"  "
 
 if [[ $LM_EVAL_BACKEND == "megatron_lm" ]]; then
