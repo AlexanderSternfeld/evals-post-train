@@ -57,4 +57,4 @@ hallulens # - todo: evaluate
 toxigen
 wmdp
 # translations
-wmt_translation
+# wmt_translation - currently not supported due to dependency conflict for unbabel/comet
