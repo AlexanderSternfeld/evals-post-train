@@ -32,6 +32,7 @@ arc_multilingual/acc
 bbh/exact_match
 drop/f1
 hellaswag_multilingual/acc_norm
+lambada/acc
 lambada_multilingual/acc
 mlogiqa_gen/exact_match
 xcopa/acc
