@@ -8,7 +8,12 @@ hendrycks_math
 humaneval_instruct
 mbpp
 ifeval
-realtoxicityprompts
+harmbench/score
+hallulens_precisewiki/hallu_rate
+hallulens_longwiki/precision
+hallulens_nonsensical/abstention
+toxigen/acc
+realtoxicitypromptsllama_small/score
 toxigen
 bbq
 hellaswag
