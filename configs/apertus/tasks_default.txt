@@ -61,6 +61,5 @@ wmdp
 aya_redteaming
 polyglotoxicitypromptsllama_small
 realtoxicitypromptsllama_small
-wmdp
 # translations
 # wmt_translation - currently not supported due to dependency conflict for unbabel/comet
