@@ -52,9 +52,15 @@ include_base_44_gen_0shot
 include_base_new_45_gen_0shot
 switzerland_qa_0shot
 # Safety
-harmbench
-hallulens # - todo: evaluate
-toxigen
+harmbench/score
+hallulens_precisewiki/hallu_rate
+hallulens_longwiki/precision
+hallulens_nonsensical/abstention
+toxigen/acc
+wmdp/acc
+aya_redteaming/score
+polyglotoxicitypromptsllama_small/score
+realtoxicitypromptsllama_small/score
 wmdp
 # translations
 # wmt_translation - currently not supported due to dependency conflict for unbabel/comet
